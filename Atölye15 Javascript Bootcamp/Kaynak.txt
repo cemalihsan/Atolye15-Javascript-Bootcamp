@@ -1,0 +1,5 @@
+https://github.com/yurtarmehmet/frontend-bootcamp/issues/1
+
+https://github.com/81-javascript-bootcamp
+
+https://developer.mozilla.org/en-US/docs/Glossary/IIFE
