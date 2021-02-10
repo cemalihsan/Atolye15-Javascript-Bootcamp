@@ -53,14 +53,19 @@ const petsModule = (function(){
     }
 
     const clickRowElement = function(){
+        let main_image = document.getElementById("main_image")
         for(let i = 0; i < $rows.length; i++){
             $rows[i].addEventListener('click', function(e){
-                $rows[i].style.backgroundColor = "gray"
+                //$rows[i].style.backgroundColor = "gray"
+                $rows[i].classList.add('selectedRow')
+                main_image.src = $rows[i].querySelector('td > img').src
+
             })
 
         }
     }
 
+    /*
     const profileImgClicked = function(){
         let images = getImages()
         let main_image = document.getElementById("main_image")
@@ -71,11 +76,12 @@ const petsModule = (function(){
         }
 
     }
-
+    */
     const bindEvents = function(){
         const buttons = getButtons();
         for(let i= 0; i< buttons.length; i++){
             buttons[i].addEventListener("click", function(event){
+                event.stopPropagation()
                 const soundId = this.dataset.sound;
                 const soundElement = document.getElementById(soundId);
                 if(soundElement){
@@ -90,7 +96,7 @@ const petsModule = (function(){
         bindEvents();
         playVoice();
         clickRowElement();
-        profileImgClicked();
+        //profileImgClicked();
     }
 
     return {

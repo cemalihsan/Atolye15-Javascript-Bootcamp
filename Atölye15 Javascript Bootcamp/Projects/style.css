@@ -11,3 +11,6 @@ body {
     width: 30px;
     height: 30px;
 }
+.selectedRow{
+    background-color: gray;
+}
