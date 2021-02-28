@@ -10,3 +10,4 @@ Istekler icin mockapi kullaniyoruz. Hesap acip kendi mock api urllerinizi kullan
 
 Run:
 npm run dev
+npm run build
