@@ -7,3 +7,6 @@
 
 ### Not:
 Istekler icin mockapi kullaniyoruz. Hesap acip kendi mock api urllerinizi kullanmaniz gerekiyor. Derste kullandigimiz resource u hesap acip linke tiklayarak clonelayabilirsiniz : https://mockapi.io/clone/6032450ea223790017aced0b
+
+Run:
+npm run dev
