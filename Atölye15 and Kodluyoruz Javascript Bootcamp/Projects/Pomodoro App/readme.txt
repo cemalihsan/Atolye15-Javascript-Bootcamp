@@ -7,6 +7,9 @@
 - UI değişiklikleri
 
 # Nasıl çalıştırılır
+```
+npm run dev
+```
 
 ```
 npm run install
