@@ -1,12 +1,46 @@
-import { getDataFromApi, addTaskToApi, deleteTaskToApi } from './data';
+import {
+  getDataFromApi,
+  addTaskToApi,
+  deleteTaskToApi,
+  completeTaskOnApi,
+} from './data';
+import {
+  POMODORO_WORK_TIME,
+  POMODORO_BREAK_TIME,
+  POMODORO_LONG_BREAK_TIME,
+} from './constans';
+import { getNow, getRemainingDate, addMinutesToDate } from './helpers/date';
 
 class PomodoroApp {
   constructor(options) {
-    let { tableTbodySelector, taskFormSelector } = options;
+    let {
+      tableTbodySelector,
+      taskFormSelector,
+      startBtnSelector,
+      timerElSelector,
+      pauseBtnSelector,
+      breakAudioSelector,
+      playAudioSelector,
+      startAudioSelector,
+    } = options;
+    this.data = [];
+    this.$bodyEl = document.querySelector('body');
     this.$tableTbody = document.querySelector(tableTbodySelector);
     this.$taskForm = document.querySelector(taskFormSelector);
-    this.$taskFormInput = this.$taskForm.querySelector('input');
+    this.$taskFormInput = this.$taskForm.querySelector('#add-task');
     this.$taskFormBtn = this.$taskForm.querySelector('button');
+    this.$startBtn = document.querySelector(startBtnSelector);
+    this.currentInterval = null;
+    this.$timerEl = document.querySelector(timerElSelector);
+    this.$pauseBtn = document.querySelector(pauseBtnSelector);
+    this.currentRemaining = null;
+    this.breakInterval = null;
+    this.currentTask = null;
+    this.taskCount = null;
+    this.$searchInput = this.$taskForm.querySelector('#search-input');
+    this.$breakAudio = document.querySelector(breakAudioSelector);
+    this.$playAudio = document.querySelector(playAudioSelector);
+    this.$startAudio = document.querySelector(startAudioSelector);
   }
 
   deleteBtnAction() {
@@ -24,26 +58,6 @@ class PomodoroApp {
     });
   }
 
-  /*
-  deleteRow() {
-    const $deleteButtonEl = document.querySelectorAll('.delete-btn');
-    $deleteButtonEl.forEach((element) => {
-      element.addEventListener('click', () => {
-        const { id } = element;
-        this.deleteTask(id);
-      });
-    });
-  }
-
-  deleteTask(id) {
-    deleteTaskToApi(id)
-      .then((response) => response.json())
-      .then((data) => {
-        const row = document.getElementById(`${data.id}`);
-        row.remove();
-      });
-  }
-*/
   addTask(task) {
     this.$taskFormBtn.textContent = 'Loading';
     this.$taskFormBtn.disabled = true;
@@ -65,6 +79,10 @@ class PomodoroApp {
   </svg>`;
     const $newTaskEl = document.createElement('tr');
     $newTaskEl.innerHTML = `<th scope="row">${task.id}</th><td>${task.title}</td><td><button id="${task.id}" class="delete-btn">${deleteIcon}</button></td>`;
+    $newTaskEl.setAttribute('data-taskId', `task${task.id}`);
+    if (task.completed) {
+      $newTaskEl.classList.add('completed');
+    }
     this.$tableTbody.appendChild($newTaskEl);
     this.$taskFormInput.value = '';
   }
@@ -72,24 +90,131 @@ class PomodoroApp {
   handleAddTask() {
     this.$taskForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const task = { title: this.$taskFormInput.value };
+      const task = { title: this.$taskFormInput.value, completed: false };
       this.addTask(task);
     });
   }
 
   fillTasksTable() {
     getDataFromApi().then((currentTasks) => {
+      this.data = currentTasks;
       currentTasks.forEach((task, index) => {
         this.addTaskToTable(task, index + 1);
       });
       this.deleteBtnAction();
     });
-    //this.deleteRow();
+  }
+
+  handleBreakTime(current_time, break_time, context) {
+    const breakDeadline = addMinutesToDate(current_time, break_time);
+    this.breakInterval = setInterval(() => {
+      const remainingBreakTime = getRemainingDate(breakDeadline);
+      const { total, minutes, seconds } = remainingBreakTime;
+      this.$timerEl.innerHTML = `${context}: ${minutes}:${seconds}`;
+      if (total <= 0) {
+        clearInterval(this.breakInterval);
+        completeTaskOnApi(this.currentTask).then(() => {
+          this.currentTask.completed = true;
+          this.setActiveTask();
+          this.$bodyEl.classList.add('taskActive');
+        });
+      }
+    }, 1000);
+  }
+
+  initializeBreakTimer() {
+    const now = getNow();
+    this.taskCount += 1;
+    if (this.taskCount % 4 === 0) {
+      this.handleBreakTime(now, POMODORO_LONG_BREAK_TIME, 'Long Break');
+      this.$breakAudio.play();
+    } else {
+      this.handleBreakTime(now, POMODORO_BREAK_TIME, 'Chill');
+      this.$breakAudio.play();
+    }
+  }
+
+  initializeTimer(deadline) {
+    this.currentInterval = setInterval(() => {
+      const remainingTime = getRemainingDate(deadline);
+      const { total, minutes, seconds } = remainingTime;
+      this.currentRemaining = total;
+      this.$timerEl.innerHTML = `You are working: ${minutes}:${seconds}`;
+      this.$bodyEl.classList.add('taskActive');
+      if (total <= 0) {
+        clearInterval(this.currentInterval);
+        this.initializeBreakTimer();
+        this.$bodyEl.classList.remove('taskActive');
+        this.$bodyEl.classList.add('taskBreak');
+      }
+    }, 1000);
+  }
+
+  createNewTimer(deadline) {
+    this.initializeTimer(deadline);
+  }
+
+  setActiveTask() {
+    const $currentActiveEl = document.querySelector('tr.active');
+    if ($currentActiveEl) {
+      $currentActiveEl.classList.remove('active');
+      $currentActiveEl.classList.add('completed');
+    }
+    this.currentTask = this.data.find((task) => !task.completed);
+    console.log(this.data);
+    if (this.currentTask) {
+      const $currentTaskEl = document.querySelector(
+        `tr[data-taskId = 'task${this.currentTask.id}']`
+      );
+      $currentTaskEl.classList.add('active');
+      this.$startAudio.play();
+      const newDeadline = addMinutesToDate(getNow(), POMODORO_WORK_TIME);
+      this.createNewTimer(newDeadline);
+    } else {
+      clearInterval(this.currentInterval);
+      clearInterval(this.breakInterval);
+      this.$timerEl.innerHTML = 'All tasks are done';
+    }
+  }
+
+  handleStart() {
+    this.$startBtn.addEventListener('click', () => {
+      if (this.currentRemaining) {
+        const remainingDeadline = new Date(
+          getNow().getTime() + this.currentRemaining
+        );
+        this.createNewTimer(remainingDeadline);
+      } else {
+        this.setActiveTask();
+      }
+    });
+  }
+
+  handlePause() {
+    this.$pauseBtn.addEventListener('click', () => {
+      clearInterval(this.currentInterval);
+      console.log(this.currentRemaining);
+    });
+  }
+
+  searchTask() {
+    this.$searchInput.addEventListener('keyup', (event) => {
+      const inputEl = event.target.value.toLowerCase();
+      const rows = this.$tableTbody.querySelectorAll('tr');
+      rows.forEach((item) => {
+        item.querySelector('td').textContent.toLowerCase().startsWith(inputEl)
+          ? (item.style.display = '')
+          : (item.style.display = 'none');
+      });
+    });
   }
 
   init() {
     this.fillTasksTable();
     this.handleAddTask();
+    this.handleStart();
+    this.handlePause();
+    this.searchTask();
   }
 }
 

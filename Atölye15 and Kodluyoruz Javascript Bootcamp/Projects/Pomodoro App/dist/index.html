@@ -27,7 +27,7 @@
     </div>
 
     <div class="row">
-        <div class="col-md-12 timer spacing">
+        <div class="col-md-12 timer spacing" id="timer">
             25:00
         </div>
     </div>
@@ -35,18 +35,21 @@
     <div class="row">
         <div class="col-md-12 action-buttons spacing">
             <div class="btn-group" role="group" aria-label="Basic mixed styles example">
-                <button type="button" class="btn btn-danger">Start</button>
-                <button type="button" class="btn btn-warning">Pause</button>
+                <button type="button" class="btn btn-danger" id="start">Start</button>
+                <button type="button" class="btn btn-warning" id="pause">Pause</button>
             </div>
         </div>
     </div>
 
     <form class="row g-3" id="task-form">
         <div class="col-auto">
-            <input type="text" class="form-control"  placeholder="Task Title">
+            <input type="text" class="form-control"  placeholder="Task Title" id="add-task">
         </div>
         <div class="col-auto">
             <button type="submit" class="btn btn-primary mb-3">Add Task</button>
+        </div>
+        <div class="col-9">
+            <input id="search-input" type="text" class="form-control"  placeholder="Search Task">
         </div>
     </form>
 
@@ -65,9 +68,9 @@
         </div>
     </div>
 
-
-
-
+    <audio id="break_audio"><source src="break.mp3" type="audio/mpeg"/></audio>
+    <audio id="play_audio"><source src="button-sound.mp3" type="audio/mpeg"/></audio>
+    <audio id="start_audio"><source src="audio_one_bell.mp3" type="audio/mpeg"/></audio>
 </div>
 
 <script src="./bundle.js"></script>
